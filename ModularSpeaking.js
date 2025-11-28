@@ -43,7 +43,7 @@ const cards = {
 
   "job-hunt-context": {
     id: "job-hunt-context",
-    title: "1st job hunt – context",
+    title: "1st job hunt — context",
     lines: [
       "pre-LinkedIn era",
       "newspaper ads, highlighter",
@@ -150,7 +150,7 @@ const cards = {
     id: "platform-insight",
     title: "platform insight",
     lines: [
-      "didn’t realise then platform 1st engineered system",
+      "didn't realise then platform 1st engineered system",
       "real-time marketplace for users",
       "apprenticeship without realising",
       "1st journey as entrepreneur"
@@ -194,6 +194,17 @@ const cards = {
     ],
     parent: "gfc-main",
     links: [{ label: "asset opportunity", targetId: "asset-opportunity" }]
+  },
+
+  "asset-opportunity": {
+    id: "asset-opportunity",
+    title: "asset opportunity",
+    lines: [
+      "post-crisis asset value opportunity",
+      "events space vision"
+    ],
+    parent: "gfc-main",
+    links: [{ label: "commercial property", targetId: "com-prop-main" }]
   },
 
   // COMMERCIAL PROPERTY CLUSTER
@@ -330,6 +341,20 @@ function renderCard() {
   const cardEl = document.createElement("div");
   cardEl.className = "card";
 
+  // Calculate dynamic font size based on total content length
+  const totalChars = (card.title || "").length + 
+                     (card.lines || []).join("").length;
+  let fontSize;
+  if (totalChars < 80) {
+    fontSize = "1.4rem";
+  } else if (totalChars < 150) {
+    fontSize = "1.25rem";
+  } else if (totalChars < 250) {
+    fontSize = "1.1rem";
+  } else {
+    fontSize = "1rem";
+  }
+
   // MAIN CONTENT
   const mainEl = document.createElement("div");
   mainEl.className = "card-main";
@@ -340,6 +365,7 @@ function renderCard() {
 
   const ul = document.createElement("ul");
   ul.className = "card-lines";
+  ul.style.fontSize = fontSize;
 
   (card.lines || []).forEach((line) => {
     const li = document.createElement("li");
