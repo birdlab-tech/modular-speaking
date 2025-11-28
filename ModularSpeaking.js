@@ -367,7 +367,7 @@ function renderCard() {
   if (card.id !== "menu") {
     const backMenuBtn = document.createElement("button");
     backMenuBtn.className = "nav-btn bottom-btn";
-    backMenuBtn.textContent = "Top";
+    backMenuBtn.textContent = "Topx";
     backMenuBtn.onclick = () => {
       currentId = "menu";
       renderCard();
@@ -378,7 +378,7 @@ function renderCard() {
   if (card.parent) {
     const backParentBtn = document.createElement("button");
     backParentBtn.className = "nav-btn bottom-btn";
-    backParentBtn.textContent = "Up";
+    backParentBtn.textContent = "Upx";
     backParentBtn.onclick = () => {
       currentId = card.parent;
       renderCard();
