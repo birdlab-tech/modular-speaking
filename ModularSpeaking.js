@@ -1,398 +1,249 @@
-/*
-  Each card has:
-    id: string
-    title: string
-    lines: [string, ...]  // 2–4 lines of cues
-    parent: string | null
-    links: [{ label, targetId }, ...]  // up to 4 forward links
-*/
+// ===========================
+// CSV-Driven Modular Speaking
+// ===========================
 
-const cards = {
-  // MAIN MENU
-  menu: {
-    id: "menu",
-    title: "Main menu",
-    lines: [
-      "1st job hunt",
-      "1st incorporation",
-      "global financial crisis",
-      "commercial property"
-    ],
-    parent: null,
-    links: [
-      { label: "1st job hunt", targetId: "job-hunt-main" },
-      { label: "1st incorporation", targetId: "incorporation-main" },
-      { label: "global financial crisis", targetId: "gfc-main" },
-      { label: "commercial property", targetId: "com-prop-main" }
-    ]
-  },
+// Global state
+let rootNode = null;
+let currentNode = null;
 
-  // 1ST JOB HUNT CLUSTER
-  "job-hunt-main": {
-    id: "job-hunt-main",
-    title: "1st job hunt",
-    lines: ["2004 graduation", "narrow scope / no innovation", "example role"],
-    parent: "menu",
-    links: [
-      { label: "job hunt context", targetId: "job-hunt-context" },
-      { label: "narrow sectors", targetId: "narrow-sectors" },
-      { label: "Airbus example", targetId: "airbus-fea" },
-      { label: "explore & discover", targetId: "explore-discover" }
-    ]
-  },
+// Initialize the application
+async function init() {
+  try {
+    // Load and parse CSV
+    const csvData = await loadCSV('ModularSpeaking.csv');
+    rootNode = parseCSV(csvData);
 
-  "job-hunt-context": {
-    id: "job-hunt-context",
-    title: "1st job hunt — context",
-    lines: [
-      "pre-LinkedIn era",
-      "newspaper ads, highlighter",
-      "post CV letters / basic forms"
-    ],
-    parent: "job-hunt-main",
-    links: []
-  },
-
-  "narrow-sectors": {
-    id: "narrow-sectors",
-    title: "narrow scope sectors",
-    lines: [
-      "advanced industrial engineering",
-      "mass-scale precision manufacture",
-      "automotive & aerospace sectors"
-    ],
-    parent: "job-hunt-main",
-    links: [{ label: "Airbus example", targetId: "airbus-fea" }]
-  },
-
-  "airbus-fea": {
-    id: "airbus-fea",
-    title: "Airbus example role",
-    lines: [
-      "Airbus FEA fastener regions",
-      "stress concentrations at nodes",
-      "bolt hole / torque vs fatigue life"
-    ],
-    parent: "job-hunt-main",
-    links: []
-  },
-
-  // 1ST INCORPORATION / LLP + JAZZ CLUSTER
-  "incorporation-main": {
-    id: "incorporation-main",
-    title: "1st incorporation",
-    lines: [
-      "explore & discover",
-      "jazz piano evenings",
-      "event management data platform",
-      "foundation for future"
-    ],
-    parent: "menu",
-    links: [
-      { label: "why own systems", targetId: "own-systems" },
-      { label: "jazz & improv", targetId: "jazz-improv" },
-      { label: "event platform", targetId: "event-platform" },
-      { label: "platform insight", targetId: "platform-insight" }
-    ]
-  },
-
-  "explore-discover": {
-    id: "explore-discover",
-    title: "explore & discover",
-    lines: [
-      "wanted to build complete systems",
-      "not analyse tiny parts of others",
-      "co-founded 1st company of 9",
-      "LLP with partner from uni"
-    ],
-    parent: "incorporation-main",
-    links: [{ label: "event platform", targetId: "event-platform" }]
-  },
-
-  "own-systems": {
-    id: "own-systems",
-    title: "why complete systems",
-    lines: [
-      "wanted to build complete systems",
-      "not analyse tiny parts of others",
-      "LLP with partner from uni"
-    ],
-    parent: "incorporation-main",
-    links: [{ label: "event platform", targetId: "event-platform" }]
-  },
-
-  "jazz-improv": {
-    id: "jazz-improv",
-    title: "jazz & cognition",
-    lines: [
-      "Sheraton Hotel",
-      "self-taught jazz",
-      "improvisation is pattern recognition"
-    ],
-    parent: "incorporation-main",
-    links: []
-  },
-
-  "event-platform": {
-    id: "event-platform",
-    title: "event data platform",
-    lines: [
-      "systems for real users",
-      "manage bookings, coordinate logistics",
-      "performer bidding feature",
-      "117 gigs Jan 2006"
-    ],
-    parent: "incorporation-main",
-    links: [{ label: "platform insight", targetId: "platform-insight" }]
-  },
-
-  "platform-insight": {
-    id: "platform-insight",
-    title: "platform insight",
-    lines: [
-      "didn't realise then platform 1st engineered system",
-      "real-time marketplace for users",
-      "apprenticeship without realising",
-      "1st journey as entrepreneur"
-    ],
-    parent: "incorporation-main",
-    links: []
-  },
-
-  // GLOBAL FINANCIAL CRISIS CLUSTER
-  "gfc-main": {
-    id: "gfc-main",
-    title: "global financial crisis",
-    lines: ["credit crunch hits", "LLP closes cleanly"],
-    parent: "menu",
-    links: [
-      { label: "subprime / pipeline", targetId: "gfc-details" },
-      { label: "closure & debts", targetId: "gfc-closure" },
-      { label: "asset opportunity", targetId: "asset-opportunity" }
-    ]
-  },
-
-  "gfc-details": {
-    id: "gfc-details",
-    title: "credit crunch detail",
-    lines: [
-      "subprime CDO collapse",
-      "client pipeline dried up",
-      "orderly LLP shutdown"
-    ],
-    parent: "gfc-main",
-    links: [{ label: "closure & debts", targetId: "gfc-closure" }]
-  },
-
-  "gfc-closure": {
-    id: "gfc-closure",
-    title: "LLP closes cleanly",
-    lines: [
-      "dissolved without debts",
-      "clean closure",
-      "lessons for next venture"
-    ],
-    parent: "gfc-main",
-    links: [{ label: "asset opportunity", targetId: "asset-opportunity" }]
-  },
-
-  "asset-opportunity": {
-    id: "asset-opportunity",
-    title: "asset opportunity",
-    lines: [
-      "post-crisis asset value opportunity",
-      "events space vision"
-    ],
-    parent: "gfc-main",
-    links: [{ label: "commercial property", targetId: "com-prop-main" }]
-  },
-
-  // COMMERCIAL PROPERTY CLUSTER
-  "com-prop-main": {
-    id: "com-prop-main",
-    title: "commercial property",
-    lines: [
-      "post-crisis asset value opportunity",
-      "events space vision"
-    ],
-    parent: "menu",
-    links: [
-      { label: "fit-out & lessons", targetId: "fitout-lessons" },
-      { label: "building services", targetId: "building-services" },
-      { label: "capital & credit", targetId: "capital-credit" },
-      { label: "liquidation arc", targetId: "liquidation-main" }
-    ]
-  },
-
-  "fitout-lessons": {
-    id: "fitout-lessons",
-    title: "fit-out & lessons",
-    lines: [
-      "fit-out from shell & core",
-      "cashflow limit",
-      "narrow escape story",
-      "lessons learnt"
-    ],
-    parent: "com-prop-main",
-    links: [{ label: "building services", targetId: "building-services" }]
-  },
-
-  "building-services": {
-    id: "building-services",
-    title: "1st building services exposure",
-    lines: [
-      "(virtual) freehold bought 2010",
-      "1st building services exposure",
-      "HVAC commissioning",
-      "bookkeeping & modelling"
-    ],
-    parent: "com-prop-main",
-    links: [{ label: "capital & credit", targetId: "capital-credit" }]
-  },
-
-  "capital-credit": {
-    id: "capital-credit",
-    title: "capital & credit",
-    lines: [
-      "holding co vs operator co",
-      "new LLP / partner for bar/kitchen",
-      "over budget / breakeven slow",
-      "credit hard (11–15% AER)"
-    ],
-    parent: "com-prop-main",
-    links: [{ label: "liquidation arc", targetId: "liquidation-main" }]
-  },
-
-  // LIQUIDATION ARC
-  "liquidation-main": {
-    id: "liquidation-main",
-    title: "operator liquidation 2013",
-    lines: [
-      "operator liquidation 2013",
-      "dual-role landlord / tenant"
-    ],
-    parent: "com-prop-main",
-    links: [
-      { label: "insolvency context", targetId: "insolvency-context" },
-      { label: "bailiff timeline", targetId: "bailiff-timeline" },
-      { label: "landlord rights", targetId: "landlord-rights" },
-      { label: "lessons learnt", targetId: "liquidation-lessons" }
-    ]
-  },
-
-  "insolvency-context": {
-    id: "insolvency-context",
-    title: "insolvency context",
-    lines: [
-      "operator insolvency rules",
-      "creditor demand letters",
-      "bailiff arrival imminent"
-    ],
-    parent: "liquidation-main",
-    links: [{ label: "bailiff timeline", targetId: "bailiff-timeline" }]
-  },
-
-  "bailiff-timeline": {
-    id: "bailiff-timeline",
-    title: "bailiff timeline",
-    lines: [
-      "rights re unpaid rent",
-      "our bailiff distrained ahead",
-      "their bailiffs too late"
-    ],
-    parent: "liquidation-main",
-    links: [{ label: "lessons learnt", targetId: "liquidation-lessons" }]
-  },
-
-  "landlord-rights": {
-    id: "landlord-rights",
-    title: "landlord rights & CRAR",
-    lines: [
-      "dual-role landlord / tenant",
-      "landlord rights re arrears",
-      "use system correctly, not shadily"
-    ],
-    parent: "liquidation-main",
-    links: [{ label: "bailiff timeline", targetId: "bailiff-timeline" }]
-  },
-
-  "liquidation-lessons": {
-    id: "liquidation-lessons",
-    title: "liquidation lessons",
-    lines: [
-      "think outside box",
-      "corporate veil / Ltd liability experience",
-      "operator huge workload, no reward"
-    ],
-    parent: "liquidation-main",
-    links: []
+    // Start at root level (Column A items)
+    currentNode = rootNode;
+    renderCard();
+  } catch (error) {
+    showError(`Failed to load application: ${error.message}`);
   }
-};
+}
 
-let currentId = "menu";
+// Load CSV file
+async function loadCSV(filename) {
+  try {
+    const response = await fetch(filename);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const text = await response.text();
+    return text;
+  } catch (error) {
+    throw new Error(`Could not load ${filename}: ${error.message}`);
+  }
+}
 
-function renderCard() {
-  const card = cards[currentId];
-  if (!card) return;
+// Parse CSV into hierarchy tree
+function parseCSV(csvText) {
+  const lines = csvText.split('\n');
+  const root = {
+    text: 'ROOT',
+    level: -1,
+    row: -1,
+    parent: null,
+    children: [],
+    isRoot: true
+  };
 
-  const app = document.getElementById("app");
-  app.innerHTML = "";
+  // Track the most recent node at each level
+  const levelStack = [root]; // levelStack[0] = root, levelStack[1] = Column A parent, etc.
 
-  const cardEl = document.createElement("div");
-  cardEl.className = "card";
+  lines.forEach((line, rowIndex) => {
+    if (!line.trim()) return; // Skip empty lines
 
-  // FOOTER NAV (centered navigation buttons only)
-  const footerEl = document.createElement("div");
-  footerEl.className = "card-footer";
+    // Parse CSV line (simple parsing - handles basic CSV)
+    const cells = parseCSVLine(line);
 
-  const navRowTop = document.createElement("div");
-  navRowTop.className = "nav-row main-nav";
+    // Process each column (A, B, C, D = indices 0, 1, 2, 3)
+    cells.forEach((cellText, columnIndex) => {
+      if (!cellText || !cellText.trim()) return; // Skip empty cells
 
-  // Forward links (up to 4)
-  (card.links || []).forEach((link) => {
-    const btn = document.createElement("button");
-    btn.className = "nav-btn";
-    btn.textContent = link.label;
-    btn.onclick = () => {
-      currentId = link.targetId;
-      renderCard();
-    };
-    navRowTop.appendChild(btn);
+      const text = cellText.trim();
+      const level = columnIndex;
+
+      // Find parent: previous level in stack
+      const parent = levelStack[level] || root;
+
+      // Create new node
+      const node = {
+        text: text,
+        level: level,
+        row: rowIndex + 1, // 1-indexed for user-friendly error messages
+        parent: parent,
+        children: [],
+        isRoot: false
+      };
+
+      // Add to parent's children
+      parent.children.push(node);
+
+      // Update level stack for this level
+      levelStack[level + 1] = node;
+
+      // Clear deeper levels (we've moved to a new branch)
+      for (let i = level + 2; i < levelStack.length; i++) {
+        levelStack[i] = null;
+      }
+    });
   });
 
-  // Back / menu row (Top left, Up right)
-  const navRowBottom = document.createElement("div");
-  navRowBottom.className = "nav-row bottom-nav";
-
-  if (card.id !== "menu") {
-    const backMenuBtn = document.createElement("button");
-    backMenuBtn.className = "nav-btn bottom-btn";
-    backMenuBtn.textContent = "Topx";
-    backMenuBtn.onclick = () => {
-      currentId = "menu";
-      renderCard();
-    };
-    navRowBottom.appendChild(backMenuBtn);
+  // Validate: root must have children (Column A items)
+  if (root.children.length === 0) {
+    throw new Error('CSV file has no content in Column A (top-level items)');
   }
 
-  if (card.parent) {
-    const backParentBtn = document.createElement("button");
-    backParentBtn.className = "nav-btn bottom-btn";
-    backParentBtn.textContent = "Upx";
-    backParentBtn.onclick = () => {
-      currentId = card.parent;
-      renderCard();
-    };
-    navRowBottom.appendChild(backParentBtn);
+  return root;
+}
+
+// Simple CSV line parser (handles basic cases)
+function parseCSVLine(line) {
+  const cells = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      cells.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  cells.push(current); // Add last cell
+
+  return cells;
+}
+
+// Render current card
+function renderCard() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  const cardEl = document.createElement('div');
+  cardEl.className = 'card';
+
+  const footerEl = document.createElement('div');
+  footerEl.className = 'card-footer';
+
+  // Main navigation: show children of current node
+  const navRowMain = document.createElement('div');
+  navRowMain.className = 'nav-row main-nav';
+
+  const nodesToShow = currentNode.children;
+
+  if (nodesToShow.length === 0) {
+    // Leaf node - no children
+    const message = document.createElement('div');
+    message.style.color = '#888';
+    message.style.textAlign = 'center';
+    message.style.padding = '20px';
+    message.textContent = 'No items to display';
+    navRowMain.appendChild(message);
+  } else {
+    // Show all children as buttons
+    nodesToShow.forEach((node) => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-btn';
+      btn.textContent = node.text;
+      btn.onclick = () => {
+        if (node.children.length > 0) {
+          // Navigate to this node's children
+          currentNode = node;
+          renderCard();
+        } else {
+          // Leaf node - show message
+          showMessage(`"${node.text}" has no sub-items`);
+        }
+      };
+      navRowMain.appendChild(btn);
+    });
   }
 
-  footerEl.appendChild(navRowTop);
-  footerEl.appendChild(navRowBottom);
+  footerEl.appendChild(navRowMain);
+
+  // Bottom navigation (Top/Up buttons)
+  const navRowBottom = document.createElement('div');
+  navRowBottom.className = 'nav-row bottom-nav';
+
+  // Show Up button if not at root
+  if (!currentNode.isRoot) {
+    const upBtn = document.createElement('button');
+    upBtn.className = 'nav-btn bottom-btn';
+    upBtn.textContent = 'Upx';
+    upBtn.onclick = () => {
+      if (currentNode.parent) {
+        currentNode = currentNode.parent;
+        renderCard();
+      }
+    };
+    navRowBottom.appendChild(upBtn);
+  }
+
+  // Show Top button if not at root
+  if (!currentNode.isRoot) {
+    const topBtn = document.createElement('button');
+    topBtn.className = 'nav-btn bottom-btn';
+    topBtn.textContent = 'Topx';
+    topBtn.onclick = () => {
+      currentNode = rootNode;
+      renderCard();
+    };
+    navRowBottom.appendChild(topBtn);
+  }
+
+  // Only add bottom nav if it has buttons
+  if (navRowBottom.children.length > 0) {
+    footerEl.appendChild(navRowBottom);
+  }
 
   cardEl.appendChild(footerEl);
-
   app.appendChild(cardEl);
 }
 
-// Initial render
-renderCard();
+// Show error message
+function showError(message) {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div style="color: #ff6b6b; padding: 40px; text-align: center; max-width: 400px;">
+      <h2 style="margin-bottom: 20px;">Error</h2>
+      <p style="line-height: 1.6;">${message}</p>
+      <p style="margin-top: 30px; font-size: 0.9em; color: #999;">
+        Check the browser console for details.
+      </p>
+    </div>
+  `;
+  console.error('Error:', message);
+}
+
+// Show temporary message
+function showMessage(message) {
+  const app = document.getElementById('app');
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #222;
+    color: #fff;
+    padding: 20px 30px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    z-index: 1000;
+  `;
+  overlay.textContent = message;
+  app.appendChild(overlay);
+
+  setTimeout(() => {
+    overlay.remove();
+  }, 2000);
+}
+
+// Start the application
+init();
