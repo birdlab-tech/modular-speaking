@@ -346,7 +346,7 @@ function renderCard() {
   footerEl.className = "card-footer";
 
   const navRowTop = document.createElement("div");
-  navRowTop.className = "nav-row";
+  navRowTop.className = "nav-row main-nav";
 
   // Forward links (up to 4)
   (card.links || []).forEach((link) => {
@@ -362,11 +362,11 @@ function renderCard() {
 
   // Back / menu row
   const navRowBottom = document.createElement("div");
-  navRowBottom.className = "nav-row";
+  navRowBottom.className = "nav-row bottom-nav";
 
   if (card.parent) {
     const backParentBtn = document.createElement("button");
-    backParentBtn.className = "nav-btn";
+    backParentBtn.className = "nav-btn bottom-btn";
     backParentBtn.textContent = "Up";
     backParentBtn.onclick = () => {
       currentId = card.parent;
@@ -377,7 +377,7 @@ function renderCard() {
 
   if (card.id !== "menu") {
     const backMenuBtn = document.createElement("button");
-    backMenuBtn.className = "nav-btn";
+    backMenuBtn.className = "nav-btn bottom-btn";
     backMenuBtn.textContent = "Top";
     backMenuBtn.onclick = () => {
       currentId = "menu";
