@@ -10,7 +10,7 @@ let currentNode = null;
 async function init() {
   try {
     // Load and parse CSV
-    const csvData = await loadCSV('ModularSpeaking.csv');
+    const csvData = await loadCSV('ModularSpeaking0.csv');
     rootNode = parseCSV(csvData);
 
     // Start at root level (Column A items)
