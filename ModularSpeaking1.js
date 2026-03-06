@@ -120,37 +120,45 @@ function parseCSVLine(line) {
   return cells;
 }
 
-// Get the next node in the traversal:
-//   - next sibling if one exists
-//   - parent (go Up) if current is the last sibling
-//   - first child if at root
+// DFS pre-order: next node is first child, then next sibling, then ancestor's next sibling
 function getNextNode(N) {
   if (N.isRoot) {
     return N.children.length > 0 ? N.children[0] : null;
   }
+  // Go deeper if this node has children
+  if (N.children.length > 0) {
+    return N.children[0];
+  }
+  // Leaf: find next sibling, or climb until we find one
+  return nextSiblingUp(N);
+}
+
+function nextSiblingUp(N) {
+  if (N.isRoot) return null;
   const siblings = N.parent.children;
   const idx = siblings.indexOf(N);
   if (idx + 1 < siblings.length) {
-    return siblings[idx + 1]; // next sibling
+    return siblings[idx + 1];
   }
-  // Last sibling — go up (unless already at root's direct child with nowhere higher)
-  if (N.parent.isRoot) {
-    return null; // exhausted all top-level items
-  }
-  return N.parent; // go Up to find next branch
+  if (N.parent.isRoot) return null; // exhausted everything
+  return nextSiblingUp(N.parent);
 }
 
-// Get the previous node in the traversal:
-//   - previous sibling if one exists
-//   - parent (go Up) if current is the first sibling
+// DFS pre-order reverse: previous sibling's deepest last descendant, or parent
 function getPrevNode(N) {
   if (N.isRoot) return null;
   const siblings = N.parent.children;
   const idx = siblings.indexOf(N);
   if (idx > 0) {
-    return siblings[idx - 1]; // previous sibling
+    // Go to deepest last descendant of the previous sibling
+    return deepestLast(siblings[idx - 1]);
   }
-  return N.parent; // first sibling — go Up
+  return N.parent; // first sibling — go Up to parent
+}
+
+function deepestLast(N) {
+  if (N.children.length === 0) return N;
+  return deepestLast(N.children[N.children.length - 1]);
 }
 
 // Render current card
