@@ -110,13 +110,18 @@
     }
 
     button.nav-btn.bottom-btn {
-      width: 48%;
+      flex: 1;
+      min-width: 0;
       border-radius: 8px;
-      padding: 14px;
-      font-size: 1rem;
+      padding: 14px 6px;
+      font-size: 0.85rem;
       border: 1px solid #444;
       background: #111;
       opacity: 0.8;
+    }
+
+    button.nav-btn.bottom-btn.nav-arrow {
+      font-size: 1.4rem;
     }
 
     button.nav-btn.bottom-btn:active {
@@ -130,9 +135,11 @@
         padding: 24px;
       }
       button.nav-btn.bottom-btn {
-        width: 70px;
-        height: 70px;
         font-size: 0.9rem;
+        padding: 14px 6px;
+      }
+      button.nav-btn.bottom-btn.nav-arrow {
+        font-size: 1.5rem;
       }
     }
   </style>

@@ -5,6 +5,7 @@
 // Global state
 let rootNode = null;
 let currentNode = null;
+let flatNodes = [];
 
 // Initialize the application
 async function init() {
@@ -12,6 +13,7 @@ async function init() {
     // Load and parse CSV
     const csvData = await loadCSV('ModularSpeaking1.csv');
     rootNode = parseCSV(csvData);
+    flatNodes = buildFlatNodes(rootNode);
 
     // Start at root level (Column A items)
     currentNode = rootNode;
@@ -120,6 +122,18 @@ function parseCSVLine(line) {
   return cells;
 }
 
+// Build flat ordered list of all nodes sorted by CSV row number
+function buildFlatNodes(node) {
+  const list = [];
+  function collect(n) {
+    if (!n.isRoot) list.push(n);
+    n.children.forEach(collect);
+  }
+  collect(node);
+  list.sort((a, b) => a.row - b.row);
+  return list;
+}
+
 // Render current card
 function renderCard() {
   const app = document.getElementById('app');
@@ -173,11 +187,35 @@ function renderCard() {
 
   footerEl.appendChild(navRowMain);
 
-  // Bottom navigation (Top/Up buttons)
+  // Bottom navigation (< Top Up >)
   const navRowBottom = document.createElement('div');
   navRowBottom.className = 'nav-row bottom-nav';
 
-  // Show Top button if not at root (left side)
+  // Current position in the flat row sequence
+  const curFlatIdx = currentNode.isRoot
+    ? -1
+    : flatNodes.findIndex(n => n === currentNode);
+
+  // < (back) button — always shown, disabled at the very start
+  const backBtn = document.createElement('button');
+  backBtn.className = 'nav-btn bottom-btn nav-arrow';
+  backBtn.textContent = '<';
+  if (currentNode.isRoot) {
+    backBtn.disabled = true;
+    backBtn.style.opacity = '0.25';
+  } else {
+    backBtn.onclick = () => {
+      if (curFlatIdx > 0) {
+        currentNode = flatNodes[curFlatIdx - 1];
+      } else {
+        currentNode = rootNode;
+      }
+      renderCard();
+    };
+  }
+  navRowBottom.appendChild(backBtn);
+
+  // Top button — only when not at root
   if (!currentNode.isRoot) {
     const topBtn = document.createElement('button');
     topBtn.className = 'nav-btn bottom-btn';
@@ -189,7 +227,7 @@ function renderCard() {
     navRowBottom.appendChild(topBtn);
   }
 
-  // Show Up button if not at root (right side)
+  // Up button — only when not at root
   if (!currentNode.isRoot) {
     const upBtn = document.createElement('button');
     upBtn.className = 'nav-btn bottom-btn';
@@ -203,10 +241,22 @@ function renderCard() {
     navRowBottom.appendChild(upBtn);
   }
 
-  // Only add bottom nav if it has buttons
-  if (navRowBottom.children.length > 0) {
-    footerEl.appendChild(navRowBottom);
+  // > (forward) button — always shown, disabled at the end
+  const fwdBtn = document.createElement('button');
+  fwdBtn.className = 'nav-btn bottom-btn nav-arrow';
+  fwdBtn.textContent = '>';
+  if (curFlatIdx >= flatNodes.length - 1) {
+    fwdBtn.disabled = true;
+    fwdBtn.style.opacity = '0.25';
+  } else {
+    fwdBtn.onclick = () => {
+      currentNode = flatNodes[curFlatIdx + 1];
+      renderCard();
+    };
   }
+  navRowBottom.appendChild(fwdBtn);
+
+  footerEl.appendChild(navRowBottom);
 
   cardEl.appendChild(footerEl);
   app.appendChild(cardEl);
