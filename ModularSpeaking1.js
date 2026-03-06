@@ -5,6 +5,11 @@
 // Global state
 let rootNode = null;
 let currentNode = null;
+// When > would jump sideways/up, it first pauses on the parent ("title" stop).
+// navPending holds the actual destination queued for the next > press.
+// prevBeforeTitle holds where we were before the title stop (so < can cancel it).
+let navPending = null;
+let prevBeforeTitle = null;
 
 // Initialize the application
 async function init() {
@@ -215,6 +220,8 @@ function renderCard() {
       } else {
         // Has children - clickable
         btn.onclick = () => {
+          navPending = null;
+          prevBeforeTitle = null;
           currentNode = node;
           renderCard();
         };
@@ -234,12 +241,22 @@ function renderCard() {
   const backBtn = document.createElement('button');
   backBtn.className = 'nav-btn bottom-btn nav-arrow';
   backBtn.textContent = '<';
-  const prevNode = getPrevNode(currentNode);
-  if (!prevNode) {
-    backBtn.disabled = true;
-    backBtn.style.opacity = '0.25';
+  if (navPending !== null) {
+    // Cancel the queued title stop and return to where we were
+    backBtn.onclick = () => {
+      currentNode = prevBeforeTitle;
+      navPending = null;
+      prevBeforeTitle = null;
+      renderCard();
+    };
   } else {
-    backBtn.onclick = () => { currentNode = prevNode; renderCard(); };
+    const prevNode = getPrevNode(currentNode);
+    if (!prevNode) {
+      backBtn.disabled = true;
+      backBtn.style.opacity = '0.25';
+    } else {
+      backBtn.onclick = () => { currentNode = prevNode; renderCard(); };
+    }
   }
   navRowBottom.appendChild(backBtn);
 
@@ -250,7 +267,12 @@ function renderCard() {
   if (currentNode.isRoot) {
     topBtn.style.opacity = '0.3';
   } else {
-    topBtn.onclick = () => { currentNode = rootNode; renderCard(); };
+    topBtn.onclick = () => {
+      navPending = null;
+      prevBeforeTitle = null;
+      currentNode = rootNode;
+      renderCard();
+    };
   }
   navRowBottom.appendChild(topBtn);
 
@@ -261,7 +283,12 @@ function renderCard() {
   if (currentNode.isRoot) {
     upBtn.style.opacity = '0.3';
   } else {
-    upBtn.onclick = () => { currentNode = currentNode.parent; renderCard(); };
+    upBtn.onclick = () => {
+      navPending = null;
+      prevBeforeTitle = null;
+      currentNode = currentNode.parent;
+      renderCard();
+    };
   }
   navRowBottom.appendChild(upBtn);
 
@@ -269,12 +296,32 @@ function renderCard() {
   const fwdBtn = document.createElement('button');
   fwdBtn.className = 'nav-btn bottom-btn nav-arrow';
   fwdBtn.textContent = '>';
-  const nextNode = getNextNode(currentNode);
-  if (!nextNode) {
+  const fwdEnabled = navPending !== null || getNextNode(currentNode) !== null;
+  if (!fwdEnabled) {
     fwdBtn.disabled = true;
     fwdBtn.style.opacity = '0.25';
   } else {
-    fwdBtn.onclick = () => { currentNode = nextNode; renderCard(); };
+    fwdBtn.onclick = () => {
+      if (navPending !== null) {
+        // Deliver the queued destination
+        currentNode = navPending;
+        navPending = null;
+        prevBeforeTitle = null;
+      } else {
+        const rawNext = getNextNode(currentNode);
+        if (!rawNext) return;
+        if (rawNext.parent === currentNode || rawNext.parent.isRoot) {
+          // Going into a direct child, or jumping to a top-level node: no title stop
+          currentNode = rawNext;
+        } else {
+          // Going sideways/up to a new branch: insert title stop on parent
+          navPending = rawNext;
+          prevBeforeTitle = currentNode;
+          currentNode = rawNext.parent;
+        }
+      }
+      renderCard();
+    };
   }
   navRowBottom.appendChild(fwdBtn);
 
