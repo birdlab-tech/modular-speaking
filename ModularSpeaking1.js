@@ -178,18 +178,6 @@ function deepestNavigableLast(N) {
   return N;
 }
 
-// Walk up from currentNode.parent collecting title stops until we reach
-// rawNext.parent or hit root. Stops tell the reader which section they're leaving.
-function getTitleStops(currentNode, rawNext) {
-  const stops = [];
-  let node = currentNode.parent;
-  while (node && !node.isRoot) {
-    stops.push(node);
-    if (node === rawNext.parent) break;
-    node = node.parent;
-  }
-  return stops;
-}
 
 // Render current card
 function renderCard() {
@@ -316,7 +304,7 @@ function renderCard() {
   } else {
     fwdBtn.onclick = () => {
       if (navQueue.length > 0) {
-        // Deliver next stop in sequence
+        // Deliver the queued destination
         currentNode = navQueue.shift();
         if (navQueue.length === 0) titleStopOrigin = null;
       } else {
@@ -326,15 +314,10 @@ function renderCard() {
           // Going into a direct child: no title stop
           currentNode = rawNext;
         } else {
-          // Going sideways/up: compute all ancestor title stops
-          const stops = getTitleStops(currentNode, rawNext);
-          if (stops.length === 0) {
-            currentNode = rawNext;
-          } else {
-            titleStopOrigin = currentNode;
-            navQueue = [...stops.slice(1), rawNext];
-            currentNode = stops[0];
-          }
+          // Going sideways/up: title stop at rawNext.parent (even if root)
+          titleStopOrigin = currentNode;
+          navQueue = [rawNext];
+          currentNode = rawNext.parent;
         }
       }
       renderCard();
