@@ -5,6 +5,11 @@
 // Global state
 let rootNode = null;
 let currentNode = null;
+// When > would jump sideways/up, it first pauses on each ancestor ("title" stops).
+// navQueue holds the remaining destinations in the current stop sequence.
+// titleStopOrigin holds where we were before the sequence (so < can cancel it).
+let navQueue = [];
+let titleStopOrigin = null;
 
 // Initialize the application
 async function init() {
@@ -120,6 +125,60 @@ function parseCSVLine(line) {
   return cells;
 }
 
+// A node is "navigable" if it has children to display (leaf nodes are
+// shown as dim labels on their parent's page and don't need their own page).
+function isNavigable(N) {
+  return N.children.length > 0;
+}
+
+// DFS pre-order over navigable nodes only.
+// > goes into first navigable child, then next navigable sibling, then climbs.
+function getNextNode(N) {
+  if (N.isRoot) {
+    return firstNavigableChild(N);
+  }
+  const child = firstNavigableChild(N);
+  if (child) return child;
+  return nextNavigableSiblingUp(N);
+}
+
+function firstNavigableChild(N) {
+  for (const c of N.children) {
+    if (isNavigable(c)) return c;
+  }
+  return null;
+}
+
+function nextNavigableSiblingUp(N) {
+  if (N.isRoot) return null;
+  const siblings = N.parent.children;
+  const idx = siblings.indexOf(N);
+  for (let i = idx + 1; i < siblings.length; i++) {
+    if (isNavigable(siblings[i])) return siblings[i];
+  }
+  if (N.parent.isRoot) return null;
+  return nextNavigableSiblingUp(N.parent);
+}
+
+// Reverse DFS: previous navigable sibling's deepest navigable last descendant, or parent.
+function getPrevNode(N) {
+  if (N.isRoot) return null;
+  const siblings = N.parent.children;
+  const idx = siblings.indexOf(N);
+  for (let i = idx - 1; i >= 0; i--) {
+    if (isNavigable(siblings[i])) return deepestNavigableLast(siblings[i]);
+  }
+  return N.parent;
+}
+
+function deepestNavigableLast(N) {
+  for (let i = N.children.length - 1; i >= 0; i--) {
+    if (isNavigable(N.children[i])) return deepestNavigableLast(N.children[i]);
+  }
+  return N;
+}
+
+
 // Render current card
 function renderCard() {
   const app = document.getElementById('app');
@@ -162,6 +221,8 @@ function renderCard() {
       } else {
         // Has children - clickable
         btn.onclick = () => {
+          navQueue = [];
+          titleStopOrigin = null;
           currentNode = node;
           renderCard();
         };
@@ -173,40 +234,98 @@ function renderCard() {
 
   footerEl.appendChild(navRowMain);
 
-  // Bottom navigation (Top/Up buttons)
+  // Bottom navigation — always 4 buttons: < Top Up >
   const navRowBottom = document.createElement('div');
   navRowBottom.className = 'nav-row bottom-nav';
 
-  // Show Top button if not at root (left side)
-  if (!currentNode.isRoot) {
-    const topBtn = document.createElement('button');
-    topBtn.className = 'nav-btn bottom-btn';
-    topBtn.textContent = 'Top';
+  // < (back)
+  const backBtn = document.createElement('button');
+  backBtn.className = 'nav-btn bottom-btn nav-arrow';
+  backBtn.textContent = '<';
+  if (titleStopOrigin !== null) {
+    // Cancel the whole title-stop sequence and return to where we were
+    backBtn.onclick = () => {
+      currentNode = titleStopOrigin;
+      navQueue = [];
+      titleStopOrigin = null;
+      renderCard();
+    };
+  } else {
+    const prevNode = getPrevNode(currentNode);
+    if (!prevNode) {
+      backBtn.disabled = true;
+      backBtn.style.opacity = '0.25';
+    } else {
+      backBtn.onclick = () => { currentNode = prevNode; renderCard(); };
+    }
+  }
+  navRowBottom.appendChild(backBtn);
+
+  // Top
+  const topBtn = document.createElement('button');
+  topBtn.className = 'nav-btn bottom-btn';
+  topBtn.textContent = 'Top';
+  if (currentNode.isRoot) {
+    topBtn.style.opacity = '0.3';
+  } else {
     topBtn.onclick = () => {
+      navQueue = [];
+      titleStopOrigin = null;
       currentNode = rootNode;
       renderCard();
     };
-    navRowBottom.appendChild(topBtn);
   }
+  navRowBottom.appendChild(topBtn);
 
-  // Show Up button if not at root (right side)
-  if (!currentNode.isRoot) {
-    const upBtn = document.createElement('button');
-    upBtn.className = 'nav-btn bottom-btn';
-    upBtn.textContent = 'Up';
+  // Up
+  const upBtn = document.createElement('button');
+  upBtn.className = 'nav-btn bottom-btn';
+  upBtn.textContent = 'Up';
+  if (currentNode.isRoot) {
+    upBtn.style.opacity = '0.3';
+  } else {
     upBtn.onclick = () => {
-      if (currentNode.parent) {
-        currentNode = currentNode.parent;
-        renderCard();
-      }
+      navQueue = [];
+      titleStopOrigin = null;
+      currentNode = currentNode.parent;
+      renderCard();
     };
-    navRowBottom.appendChild(upBtn);
   }
+  navRowBottom.appendChild(upBtn);
 
-  // Only add bottom nav if it has buttons
-  if (navRowBottom.children.length > 0) {
-    footerEl.appendChild(navRowBottom);
+  // > (forward)
+  const fwdBtn = document.createElement('button');
+  fwdBtn.className = 'nav-btn bottom-btn nav-arrow';
+  fwdBtn.textContent = '>';
+  const fwdEnabled = navQueue.length > 0 || getNextNode(currentNode) !== null;
+  if (!fwdEnabled) {
+    fwdBtn.disabled = true;
+    fwdBtn.style.opacity = '0.25';
+  } else {
+    fwdBtn.onclick = () => {
+      if (navQueue.length > 0) {
+        // Deliver the queued destination
+        currentNode = navQueue.shift();
+        if (navQueue.length === 0) titleStopOrigin = null;
+      } else {
+        const rawNext = getNextNode(currentNode);
+        if (!rawNext) return;
+        if (rawNext.parent === currentNode) {
+          // Going into a direct child: no title stop
+          currentNode = rawNext;
+        } else {
+          // Going sideways/up: title stop at rawNext.parent (even if root)
+          titleStopOrigin = currentNode;
+          navQueue = [rawNext];
+          currentNode = rawNext.parent;
+        }
+      }
+      renderCard();
+    };
   }
+  navRowBottom.appendChild(fwdBtn);
+
+  footerEl.appendChild(navRowBottom);
 
   cardEl.appendChild(footerEl);
   app.appendChild(cardEl);
