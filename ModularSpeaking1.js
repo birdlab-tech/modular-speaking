@@ -5,11 +5,11 @@
 // Global state
 let rootNode = null;
 let currentNode = null;
-// When > would jump sideways/up, it first pauses on the parent ("title" stop).
-// navPending holds the actual destination queued for the next > press.
-// prevBeforeTitle holds where we were before the title stop (so < can cancel it).
-let navPending = null;
-let prevBeforeTitle = null;
+// When > would jump sideways/up, it first pauses on each ancestor ("title" stops).
+// navQueue holds the remaining destinations in the current stop sequence.
+// titleStopOrigin holds where we were before the sequence (so < can cancel it).
+let navQueue = [];
+let titleStopOrigin = null;
 
 // Initialize the application
 async function init() {
@@ -178,6 +178,19 @@ function deepestNavigableLast(N) {
   return N;
 }
 
+// Walk up from currentNode.parent collecting title stops until we reach
+// rawNext.parent or hit root. Stops tell the reader which section they're leaving.
+function getTitleStops(currentNode, rawNext) {
+  const stops = [];
+  let node = currentNode.parent;
+  while (node && !node.isRoot) {
+    stops.push(node);
+    if (node === rawNext.parent) break;
+    node = node.parent;
+  }
+  return stops;
+}
+
 // Render current card
 function renderCard() {
   const app = document.getElementById('app');
@@ -220,8 +233,8 @@ function renderCard() {
       } else {
         // Has children - clickable
         btn.onclick = () => {
-          navPending = null;
-          prevBeforeTitle = null;
+          navQueue = [];
+          titleStopOrigin = null;
           currentNode = node;
           renderCard();
         };
@@ -241,12 +254,12 @@ function renderCard() {
   const backBtn = document.createElement('button');
   backBtn.className = 'nav-btn bottom-btn nav-arrow';
   backBtn.textContent = '<';
-  if (navPending !== null) {
-    // Cancel the queued title stop and return to where we were
+  if (titleStopOrigin !== null) {
+    // Cancel the whole title-stop sequence and return to where we were
     backBtn.onclick = () => {
-      currentNode = prevBeforeTitle;
-      navPending = null;
-      prevBeforeTitle = null;
+      currentNode = titleStopOrigin;
+      navQueue = [];
+      titleStopOrigin = null;
       renderCard();
     };
   } else {
@@ -268,8 +281,8 @@ function renderCard() {
     topBtn.style.opacity = '0.3';
   } else {
     topBtn.onclick = () => {
-      navPending = null;
-      prevBeforeTitle = null;
+      navQueue = [];
+      titleStopOrigin = null;
       currentNode = rootNode;
       renderCard();
     };
@@ -284,8 +297,8 @@ function renderCard() {
     upBtn.style.opacity = '0.3';
   } else {
     upBtn.onclick = () => {
-      navPending = null;
-      prevBeforeTitle = null;
+      navQueue = [];
+      titleStopOrigin = null;
       currentNode = currentNode.parent;
       renderCard();
     };
@@ -296,28 +309,32 @@ function renderCard() {
   const fwdBtn = document.createElement('button');
   fwdBtn.className = 'nav-btn bottom-btn nav-arrow';
   fwdBtn.textContent = '>';
-  const fwdEnabled = navPending !== null || getNextNode(currentNode) !== null;
+  const fwdEnabled = navQueue.length > 0 || getNextNode(currentNode) !== null;
   if (!fwdEnabled) {
     fwdBtn.disabled = true;
     fwdBtn.style.opacity = '0.25';
   } else {
     fwdBtn.onclick = () => {
-      if (navPending !== null) {
-        // Deliver the queued destination
-        currentNode = navPending;
-        navPending = null;
-        prevBeforeTitle = null;
+      if (navQueue.length > 0) {
+        // Deliver next stop in sequence
+        currentNode = navQueue.shift();
+        if (navQueue.length === 0) titleStopOrigin = null;
       } else {
         const rawNext = getNextNode(currentNode);
         if (!rawNext) return;
-        if (rawNext.parent === currentNode || rawNext.parent.isRoot) {
-          // Going into a direct child, or jumping to a top-level node: no title stop
+        if (rawNext.parent === currentNode) {
+          // Going into a direct child: no title stop
           currentNode = rawNext;
         } else {
-          // Going sideways/up to a new branch: insert title stop on parent
-          navPending = rawNext;
-          prevBeforeTitle = currentNode;
-          currentNode = rawNext.parent;
+          // Going sideways/up: compute all ancestor title stops
+          const stops = getTitleStops(currentNode, rawNext);
+          if (stops.length === 0) {
+            currentNode = rawNext;
+          } else {
+            titleStopOrigin = currentNode;
+            navQueue = [...stops.slice(1), rawNext];
+            currentNode = stops[0];
+          }
         }
       }
       renderCard();
