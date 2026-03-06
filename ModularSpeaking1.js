@@ -120,45 +120,57 @@ function parseCSVLine(line) {
   return cells;
 }
 
-// DFS pre-order: next node is first child, then next sibling, then ancestor's next sibling
-function getNextNode(N) {
-  if (N.isRoot) {
-    return N.children.length > 0 ? N.children[0] : null;
-  }
-  // Go deeper if this node has children
-  if (N.children.length > 0) {
-    return N.children[0];
-  }
-  // Leaf: find next sibling, or climb until we find one
-  return nextSiblingUp(N);
+// A node is "navigable" if it has children to display (leaf nodes are
+// shown as dim labels on their parent's page and don't need their own page).
+function isNavigable(N) {
+  return N.children.length > 0;
 }
 
-function nextSiblingUp(N) {
+// DFS pre-order over navigable nodes only.
+// > goes into first navigable child, then next navigable sibling, then climbs.
+function getNextNode(N) {
+  if (N.isRoot) {
+    return firstNavigableChild(N);
+  }
+  const child = firstNavigableChild(N);
+  if (child) return child;
+  return nextNavigableSiblingUp(N);
+}
+
+function firstNavigableChild(N) {
+  for (const c of N.children) {
+    if (isNavigable(c)) return c;
+  }
+  return null;
+}
+
+function nextNavigableSiblingUp(N) {
   if (N.isRoot) return null;
   const siblings = N.parent.children;
   const idx = siblings.indexOf(N);
-  if (idx + 1 < siblings.length) {
-    return siblings[idx + 1];
+  for (let i = idx + 1; i < siblings.length; i++) {
+    if (isNavigable(siblings[i])) return siblings[i];
   }
-  if (N.parent.isRoot) return null; // exhausted everything
-  return nextSiblingUp(N.parent);
+  if (N.parent.isRoot) return null;
+  return nextNavigableSiblingUp(N.parent);
 }
 
-// DFS pre-order reverse: previous sibling's deepest last descendant, or parent
+// Reverse DFS: previous navigable sibling's deepest navigable last descendant, or parent.
 function getPrevNode(N) {
   if (N.isRoot) return null;
   const siblings = N.parent.children;
   const idx = siblings.indexOf(N);
-  if (idx > 0) {
-    // Go to deepest last descendant of the previous sibling
-    return deepestLast(siblings[idx - 1]);
+  for (let i = idx - 1; i >= 0; i--) {
+    if (isNavigable(siblings[i])) return deepestNavigableLast(siblings[i]);
   }
-  return N.parent; // first sibling — go Up to parent
+  return N.parent;
 }
 
-function deepestLast(N) {
-  if (N.children.length === 0) return N;
-  return deepestLast(N.children[N.children.length - 1]);
+function deepestNavigableLast(N) {
+  for (let i = N.children.length - 1; i >= 0; i--) {
+    if (isNavigable(N.children[i])) return deepestNavigableLast(N.children[i]);
+  }
+  return N;
 }
 
 // Render current card
