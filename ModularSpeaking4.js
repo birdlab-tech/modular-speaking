@@ -259,8 +259,6 @@ function renderCard() {
       backBtn.onclick = () => { currentNode = prevNode; renderCard(); };
     }
   }
-  navRowBottom.appendChild(backBtn);
-
   // Top
   const topBtn = document.createElement('button');
   topBtn.className = 'nav-btn bottom-btn';
@@ -275,8 +273,6 @@ function renderCard() {
       renderCard();
     };
   }
-  navRowBottom.appendChild(topBtn);
-
   // Up
   const upBtn = document.createElement('button');
   upBtn.className = 'nav-btn bottom-btn';
@@ -291,8 +287,6 @@ function renderCard() {
       renderCard();
     };
   }
-  navRowBottom.appendChild(upBtn);
-
   // > (forward)
   const fwdBtn = document.createElement('button');
   fwdBtn.className = 'nav-btn bottom-btn nav-arrow';
@@ -324,6 +318,9 @@ function renderCard() {
     };
   }
   navRowBottom.appendChild(fwdBtn);
+  navRowBottom.appendChild(topBtn);
+  navRowBottom.appendChild(upBtn);
+  navRowBottom.appendChild(backBtn);
 
   footerEl.appendChild(navRowBottom);
 
