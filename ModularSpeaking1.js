@@ -10,6 +10,8 @@ let currentNode = null;
 // titleStopOrigin holds where we were before the sequence (so < can cancel it).
 let navQueue = [];
 let titleStopOrigin = null;
+// Tap-forward mode: single tap anywhere on card = >, double-tap = toggle
+let tapForwardMode = false;
 
 // Initialize the application
 async function init() {
@@ -179,6 +181,55 @@ function deepestNavigableLast(N) {
 }
 
 
+// Shared forward/back navigation logic (used by buttons, swipe, and tap)
+function navigateForward() {
+  if (navQueue.length > 0) {
+    currentNode = navQueue.shift();
+    if (navQueue.length === 0) titleStopOrigin = null;
+  } else {
+    const rawNext = getNextNode(currentNode);
+    if (!rawNext) return;
+    if (rawNext.parent === currentNode) {
+      currentNode = rawNext;
+    } else {
+      titleStopOrigin = currentNode;
+      navQueue = [rawNext];
+      currentNode = rawNext.parent;
+    }
+  }
+  renderCard();
+}
+
+function navigateBack() {
+  if (titleStopOrigin !== null) {
+    currentNode = titleStopOrigin;
+    navQueue = [];
+    titleStopOrigin = null;
+  } else {
+    const prevNode = getPrevNode(currentNode);
+    if (!prevNode) return;
+    currentNode = prevNode;
+  }
+  renderCard();
+}
+
+function updateTapForwardIndicator() {
+  let el = document.getElementById('tap-fwd-indicator');
+  if (tapForwardMode) {
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'tap-fwd-indicator';
+      el.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);' +
+        'background:rgba(255,255,255,0.12);color:#fff;border-radius:8px;' +
+        'padding:4px 14px;font-size:1rem;pointer-events:none;z-index:999;';
+      el.textContent = '▶ tap anywhere = forward';
+      document.body.appendChild(el);
+    }
+  } else {
+    if (el) el.remove();
+  }
+}
+
 // Render current card
 function renderCard() {
   const app = document.getElementById('app');
@@ -243,20 +294,14 @@ function renderCard() {
   backBtn.className = 'nav-btn bottom-btn nav-arrow';
   backBtn.textContent = '<';
   if (titleStopOrigin !== null) {
-    // Cancel the whole title-stop sequence and return to where we were
-    backBtn.onclick = () => {
-      currentNode = titleStopOrigin;
-      navQueue = [];
-      titleStopOrigin = null;
-      renderCard();
-    };
+    backBtn.onclick = navigateBack;
   } else {
     const prevNode = getPrevNode(currentNode);
     if (!prevNode) {
       backBtn.disabled = true;
       backBtn.style.opacity = '0.25';
     } else {
-      backBtn.onclick = () => { currentNode = prevNode; renderCard(); };
+      backBtn.onclick = navigateBack;
     }
   }
   navRowBottom.appendChild(backBtn);
@@ -302,26 +347,7 @@ function renderCard() {
     fwdBtn.disabled = true;
     fwdBtn.style.opacity = '0.25';
   } else {
-    fwdBtn.onclick = () => {
-      if (navQueue.length > 0) {
-        // Deliver the queued destination
-        currentNode = navQueue.shift();
-        if (navQueue.length === 0) titleStopOrigin = null;
-      } else {
-        const rawNext = getNextNode(currentNode);
-        if (!rawNext) return;
-        if (rawNext.parent === currentNode) {
-          // Going into a direct child: no title stop
-          currentNode = rawNext;
-        } else {
-          // Going sideways/up: title stop at rawNext.parent (even if root)
-          titleStopOrigin = currentNode;
-          navQueue = [rawNext];
-          currentNode = rawNext.parent;
-        }
-      }
-      renderCard();
-    };
+    fwdBtn.onclick = navigateForward;
   }
   navRowBottom.appendChild(fwdBtn);
 
@@ -370,9 +396,9 @@ function showMessage(message) {
   }, 2000);
 }
 
-// Swipe gesture detection (swipe-right = >, swipe-left = <)
+// Touch: swipe-right=>fwd, swipe-left=>back, double-tap=toggle tap-fwd mode
 (function () {
-  let startX = 0, startY = 0;
+  let startX = 0, startY = 0, lastTapTime = 0, tapTimer = null;
   document.addEventListener('touchstart', function (e) {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
@@ -380,36 +406,24 @@ function showMessage(message) {
   document.addEventListener('touchend', function (e) {
     const dx = e.changedTouches[0].clientX - startX;
     const dy = e.changedTouches[0].clientY - startY;
-    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return; // too short or too vertical
-    if (dx > 0) {
-      // Swipe right → forward (>)
-      if (navQueue.length > 0) {
-        currentNode = navQueue.shift();
-        if (navQueue.length === 0) titleStopOrigin = null;
-      } else {
-        const rawNext = getNextNode(currentNode);
-        if (!rawNext) return;
-        if (rawNext.parent === currentNode) {
-          currentNode = rawNext;
-        } else {
-          titleStopOrigin = currentNode;
-          navQueue = [rawNext];
-          currentNode = rawNext.parent;
-        }
-      }
-      renderCard();
+    if (Math.abs(dx) >= 50 && Math.abs(dx) >= Math.abs(dy)) {
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+      lastTapTime = 0;
+      if (dx > 0) navigateForward(); else navigateBack();
+      return;
+    }
+    if (e.target.closest('button')) return;
+    const now = Date.now();
+    if (now - lastTapTime < 300) {
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+      lastTapTime = 0;
+      tapForwardMode = !tapForwardMode;
+      updateTapForwardIndicator();
     } else {
-      // Swipe left → back (<)
-      if (titleStopOrigin !== null) {
-        currentNode = titleStopOrigin;
-        navQueue = [];
-        titleStopOrigin = null;
-      } else {
-        const prevNode = getPrevNode(currentNode);
-        if (!prevNode) return;
-        currentNode = prevNode;
+      lastTapTime = now;
+      if (tapForwardMode) {
+        tapTimer = setTimeout(function() { tapTimer = null; navigateForward(); }, 300);
       }
-      renderCard();
     }
   }, { passive: true });
 })();
