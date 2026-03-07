@@ -370,5 +370,49 @@ function showMessage(message) {
   }, 2000);
 }
 
+// Swipe gesture detection (swipe-right = >, swipe-left = <)
+(function () {
+  let startX = 0, startY = 0;
+  document.addEventListener('touchstart', function (e) {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return; // too short or too vertical
+    if (dx > 0) {
+      // Swipe right → forward (>)
+      if (navQueue.length > 0) {
+        currentNode = navQueue.shift();
+        if (navQueue.length === 0) titleStopOrigin = null;
+      } else {
+        const rawNext = getNextNode(currentNode);
+        if (!rawNext) return;
+        if (rawNext.parent === currentNode) {
+          currentNode = rawNext;
+        } else {
+          titleStopOrigin = currentNode;
+          navQueue = [rawNext];
+          currentNode = rawNext.parent;
+        }
+      }
+      renderCard();
+    } else {
+      // Swipe left → back (<)
+      if (titleStopOrigin !== null) {
+        currentNode = titleStopOrigin;
+        navQueue = [];
+        titleStopOrigin = null;
+      } else {
+        const prevNode = getPrevNode(currentNode);
+        if (!prevNode) return;
+        currentNode = prevNode;
+      }
+      renderCard();
+    }
+  }, { passive: true });
+})();
+
 // Start the application
 init();
