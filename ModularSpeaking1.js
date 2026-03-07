@@ -10,8 +10,6 @@ let currentNode = null;
 // titleStopOrigin holds where we were before the sequence (so < can cancel it).
 let navQueue = [];
 let titleStopOrigin = null;
-// Tap-forward mode: single tap anywhere on card = >, double-tap = toggle
-let tapForwardMode = false;
 
 // Initialize the application
 async function init() {
@@ -213,22 +211,6 @@ function navigateBack() {
   renderCard();
 }
 
-function updateTapForwardIndicator() {
-  let el = document.getElementById('tap-fwd-indicator');
-  if (tapForwardMode) {
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'tap-fwd-indicator';
-      el.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);' +
-        'background:rgba(255,255,255,0.12);color:#fff;border-radius:8px;' +
-        'padding:4px 14px;font-size:1rem;pointer-events:none;z-index:999;';
-      el.textContent = '▶ tap anywhere = forward';
-      document.body.appendChild(el);
-    }
-  } else {
-    if (el) el.remove();
-  }
-}
 
 // Render current card
 function renderCard() {
@@ -393,37 +375,6 @@ function showMessage(message) {
   }, 2000);
 }
 
-// Touch: swipe-right=>fwd, swipe-left=>back, double-tap=toggle tap-fwd mode
-(function () {
-  let startX = 0, startY = 0, lastTapTime = 0, tapTimer = null;
-  document.addEventListener('touchstart', function (e) {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-  }, { passive: true });
-  document.addEventListener('touchend', function (e) {
-    const dx = e.changedTouches[0].clientX - startX;
-    const dy = e.changedTouches[0].clientY - startY;
-    if (Math.abs(dx) >= 50 && Math.abs(dx) >= Math.abs(dy)) {
-      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
-      lastTapTime = 0;
-      if (dx > 0) navigateForward(); else navigateBack();
-      return;
-    }
-    if (e.target.closest('button')) return;
-    const now = Date.now();
-    if (now - lastTapTime < 300) {
-      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
-      lastTapTime = 0;
-      tapForwardMode = !tapForwardMode;
-      updateTapForwardIndicator();
-    } else {
-      lastTapTime = now;
-      if (tapForwardMode) {
-        tapTimer = setTimeout(function() { tapTimer = null; navigateForward(); }, 300);
-      }
-    }
-  }, { passive: true });
-})();
 
 // Start the application
 init();
