@@ -304,8 +304,6 @@ function renderCard() {
       backBtn.onclick = navigateBack;
     }
   }
-  navRowBottom.appendChild(backBtn);
-
   // Top
   const topBtn = document.createElement('button');
   topBtn.className = 'nav-btn bottom-btn';
