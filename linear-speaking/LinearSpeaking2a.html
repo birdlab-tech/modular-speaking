@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Linear Speaking Cue Cards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      /* Safe area padding for iPhone notch and home bar */
+      padding: env(safe-area-inset-top, 60px) env(safe-area-inset-right, 0)
+               env(safe-area-inset-bottom, 80px) env(safe-area-inset-left, 0);
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 480px;
+      height: 100%;
+      background: #000;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .card-footer {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      width: 100%;
+      max-width: 400px;
+      height: 100%;
+      padding-top: 80px;
+    }
+
+    .nav-row {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .nav-row.main-nav {
+      flex: 0;
+      justify-content: flex-start;
+    }
+
+    .nav-row.bottom-nav {
+      position: fixed;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 400px;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    button.nav-btn {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #444;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 500;
+      padding: 20px;
+      font-size: 1.3rem;
+    }
+
+    button.nav-btn:active {
+      background: #222;
+    }
+
+    button.nav-btn.bottom-btn {
+      flex: 0 0 60px;
+      height: 60px;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 1.1rem;
+      border: 1px solid #444;
+      background: #111;
+      opacity: 0.8;
+    }
+
+    button.nav-btn.bottom-btn.start-btn {
+      flex: 1;
+      font-size: 1rem;
+    }
+
+    button.nav-btn.bottom-btn:active {
+      opacity: 1;
+      background: #222;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="LinearSpeaking2.js"></script>
+</body>
+</html>
