@@ -17,7 +17,11 @@ async function init() {
     const response = await fetch(csvFile);
     if (!response.ok) throw new Error(`Could not load ${csvFile} (HTTP ${response.status})`);
     const buffer = await response.arrayBuffer();
-    const text = new TextDecoder('windows-1252').decode(buffer);
+    const bytes = new Uint8Array(buffer);
+    const isUtf8Bom = bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF;
+    const text = isUtf8Bom
+      ? new TextDecoder('utf-8').decode(buffer).replace(/^\uFEFF/, '')
+      : new TextDecoder('windows-1252').decode(buffer);
 
     slides = parseCSV(text);
     if (slides.length === 0) throw new Error('No content found in Column A of the CSV');
