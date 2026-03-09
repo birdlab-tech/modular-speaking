@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Modular Speaking Cue Cards</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      /* Safe area padding for mobile notches and bars */
+      padding: env(safe-area-inset-top, 60px) env(safe-area-inset-right, 0) 
+               env(safe-area-inset-bottom, 80px) env(safe-area-inset-left, 0);
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 480px;
+      height: 100%;
+      background: #000;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .card-footer {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      width: 100%;
+      max-width: 400px;
+      height: 100%;
+      padding-top: 10vh;
+    }
+
+    .nav-row {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .nav-row.main-nav {
+      flex: 0;
+      justify-content: flex-start;
+    }
+
+    .nav-row.bottom-nav {
+      position: fixed;
+      bottom: 10vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 400px;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    button.nav-btn {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #444;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 500;
+      padding: 20px;
+      font-size: 1.3rem;
+    }
+
+    button.nav-btn:active {
+      background: #222;
+    }
+
+    button.nav-btn.bottom-btn {
+      width: 48%;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 1rem;
+      border: 1px solid #444;
+      background: #111;
+      opacity: 0.8;
+    }
+
+    button.nav-btn.bottom-btn:active {
+      opacity: 1;
+      background: #222;
+    }
+
+    @media (min-width: 768px) {
+      button.nav-btn {
+        font-size: 1.4rem;
+        padding: 24px;
+      }
+      button.nav-btn.bottom-btn {
+        width: 70px;
+        height: 70px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+<script src="ModularSpeaking2.js"></script>
+</body>
+</html>
