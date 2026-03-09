@@ -12,7 +12,8 @@ async function init() {
     const csvFile = 'LinearSpeaking4.csv';
     const response = await fetch(csvFile);
     if (!response.ok) throw new Error(`Could not load ${csvFile} (HTTP ${response.status})`);
-    const text = await response.text();
+    const buffer = await response.arrayBuffer();
+    const text = new TextDecoder('windows-1252').decode(buffer);
 
     slides = parseCSV(text);
     if (slides.length === 0) throw new Error('No content found in Column A of the CSV');
@@ -88,8 +89,6 @@ function render() {
     const item = document.createElement('button');
     item.className = 'nav-btn';
     item.textContent = line;
-    item.style.border = '1px solid #000';
-    item.style.background = '#000';
     item.style.cursor = 'default';
     mainNav.appendChild(item);
   });
